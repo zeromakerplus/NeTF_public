@@ -5,8 +5,9 @@ The preprocessed data we use can be downloaded at [[Google Drive]](https://drive
 
 The raw data can be downloaded at [Zaragoza NLOS synthetic dataset](https://graphics.unizar.es/nlos_dataset.html), [f-k migration](http://www.computationalimaging.org/publications/nlos-fk/) and [Convolutional Approximations](https://imaging.cs.cmu.edu/conv_nlos/)
 
-# environment setup
-"pip install -r requirements.txt"
+# Environment setup
+
+`"pip install -r requirements.txt"`
 
 
 # How to run

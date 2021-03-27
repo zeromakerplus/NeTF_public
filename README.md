@@ -7,7 +7,9 @@ The raw data can be downloaded at [Zaragoza NLOS synthetic dataset](https://grap
 
 # Environment setup
 
-`"pip install -r requirements.txt"`
+`
+"pip install -r requirements.txt"
+`
 
 
 # How to run

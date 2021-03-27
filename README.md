@@ -40,3 +40,6 @@ Under preset settings, the training process takes around 24 hours on a single NV
 The final volume and slices from different view are stroaged at "./model"
 
 And the comparision between predicted and measured histogram is stroaged at "./figure"
+
+# Contact us
+Please email shensy@shanghaitech.edu.cn or wangzi@shanghaitech.edu.cn if you have any questions or suggestions.

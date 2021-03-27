@@ -7,9 +7,8 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
-from load_generated_data import load_generated_gt
 from scipy.stats import multivariate_normal
-from MLP import Network
+from MLP import *
 import scipy.io
 from scipy import linalg
 import multiprocessing

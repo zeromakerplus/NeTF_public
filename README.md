@@ -3,7 +3,7 @@ The re is the released code for paper "Non-line-of-Sight Imaging via Neural Tran
 
 requirements is going to be updated
 
-The data we use can be downloaded at [Google Drive](https://drive.google.com/file/d/1kGVrFcNZZbZs0ute_roEOg5UkYeh3jRl/view?usp=sharing) or [Baidu Netdisk](https://pan.baidu.com/s/16lWXwhm8CbXWAumJmlw9MQ) and the extrated code: netf
+The data we use can be downloaded at [Google Drive](https://drive.google.com/file/d/1kGVrFcNZZbZs0ute_roEOg5UkYeh3jRl/view?usp=sharing) or [Baidu Netdisk](https://pan.baidu.com/s/16lWXwhm8CbXWAumJmlw9MQ) with password: netf
 
 # environment setup
 "pip install -r requirements.txt"

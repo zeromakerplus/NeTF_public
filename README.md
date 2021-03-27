@@ -6,12 +6,33 @@ The preprocessed data we use can be downloaded at [[Google Drive]](https://drive
 The raw data can be downloaded at [Zaragoza NLOS synthetic dataset](https://graphics.unizar.es/nlos_dataset.html), [f-k migration](http://www.computationalimaging.org/publications/nlos-fk/) and [Convolutional Approximations](https://imaging.cs.cmu.edu/conv_nlos/)
 
 # Environment setup
-
+Make sure that the dependcies in `requirements.txt` are installed, or they can be installed by 
 ```
 "pip install -r requirements.txt"
 ```
 
-
 # How to run
+Make sure that data is place correctly like
+```
+project
+│   README.md
+│   file001.txt    
+│
+└───folder1
+│   │   file011.txt
+│   │   file012.txt
+│   │
+│   └───subfolder1
+│       │   file111.txt
+│       │   file112.txt
+│       │   ...
+│   
+└───folder2
+    │   file021.txt
+    │   file022.txt
+```
+Then run with preset settings:
+```
 "python run_netf.py --config configs/zaragoza_bunny.txt"
-preset settings are prepared for different scenes at "./configs/".
+```
+Different settings are stroaged at "./configs/".

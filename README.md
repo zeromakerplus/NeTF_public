@@ -35,3 +35,7 @@ Then run with preset settings:
 Different settings are stroaged at "./configs/".
 
 Under preset settings, the training process takes around 24 hours on a single NVIDIA Tesla M40 GPU.
+
+# Results
+The final volume with image slice from different view are stroaged at "./model"
+And the comparision between predicted and measured histogram is stroaged at "./figure"

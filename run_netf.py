@@ -6,23 +6,19 @@ import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
 import scipy.io
 
 import matplotlib.pyplot as plt
 
 
-from run_nerf_helpers import *
+from run_netf_helpers import *
 from MLP import *
 
 from load_nlos import *
 from math import ceil
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# device = torch.device("cpu")
-
 DEBUG = False
 
 def config_parser():
@@ -138,8 +134,6 @@ def config_parser():
     # NeRF-NLOS arguments
     parser.add_argument("--use_encoding", action='store_true', 
                         help='use positional encoding or not')
-    # parser.add_argument("--num_layer", type=int, default=2, 
-    #                     help='the number of layers in MLP')
     parser.add_argument("--hiddenlayer_dim", type=int, default=64, 
                         help='the dimmension of hidden layer')                    
     parser.add_argument("--encoding_dim", type=int, default=10, 
@@ -156,8 +150,6 @@ def config_parser():
                         help='load groundtruth volume or not')
     parser.add_argument("--no_rho", action='store_true', 
                         help='network no_rho or not')  
-    # parser.add_argument("--gtdir", type=str, default='./data/plane_volume.mat', 
-    #                     help='the path of groundtruth volume')
     parser.add_argument("--hierarchical_sampling", action='store_true', 
                         help='hierarchical sampling or not')
     parser.add_argument("--cuda", type=int, default=0, 
@@ -223,22 +215,20 @@ def train():
     args = parser.parse_args()
     seed = args.rng
     np.random.seed(seed)
-    torch.manual_seed(seed)            # 为CPU设置随机种子
-    torch.cuda.manual_seed(seed)       # 为当前GPU设置随机种子
-    torch.cuda.manual_seed_all(seed)   # 为所有GPU设置随机种子
+    torch.manual_seed(seed)            
+    torch.cuda.manual_seed(seed)       
+    torch.cuda.manual_seed_all(seed)   
     # print(np.random.random(1))
+
     torch.cuda.set_device(args.cuda)
+
     # Load data
     if args.dataset_type == 'nlos':
         nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size = load_nlos_data(args.datadir)
-        # volume_position = 
-        # volume_size
         pmin = np.array([-0.25,-0.65,-0.25])
         pmax = np.array([0.25,-0.35,0.25])
     elif args.dataset_type == 'generated':
         nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_generated_data(args.datadir)
-        
-        # volume, volume_vector = load_generated_gt(args.gtdir)
         pmin = np.array([-0.25,-0.75,-0.25])
         pmax = np.array([0.25,-0.25,0.25])
     elif args.dataset_type == 'born':
@@ -247,36 +237,20 @@ def train():
         volume_position = np.array([0.1,-0.3,0.1])
         pmin = np.array([0, -0.4, 0])
         pmax = np.array([0.2, -0.2, 0.2])
-        # print(type(nlos_data), type(camera_grid_points), type(camera_grid_positions), type(camera_grid_size), type(camera_position), type(volume_position), type(volume_size)) # <class 'numpy.ndarray'> <class 'h5py._hl.dataset.Dataset'> <class 'h5py._hl.dataset.Dataset'> <class 'h5py._hl.dataset.Dataset'> <class 'h5py._hl.dataset.Dataset'>
     elif args.dataset_type == 'zaragoza256':
         nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_zaragoza256_data(args.datadir)
-        # volume_position = 
-        # volume_size
-        # volume_position = np.array([0,-0.8,-0.4])
-        # volume_size = 1.6
-
         pmin = volume_position - volume_size / 2
-        
         pmax = volume_position + volume_size / 2
         if not args.no_rho:
             pmin = np.concatenate((pmin,np.array([0, -np.pi])), axis = 0)
             pmax = np.concatenate((pmax,np.array([np.pi, 0])), axis = 0)
-        # pmin = np.array([-0.5,-0.8,-0.5])
-        # pmax = np.array([0.5,-0.2,0.5])
     elif args.dataset_type == 'fk':
         nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_fk_data(args.datadir)
-        # volume_position = 
-        # volume_size
         pmin = volume_position - volume_size / 2
         pmax = volume_position + volume_size / 2
-        # volume_size = 2
-        # pmin = np.array([-1, -1.75, -1])
-        # pmax = np.array([1,-0.95,1])
         if not args.no_rho:
             pmin = np.concatenate((pmin,np.array([0, -np.pi])), axis = 0)
             pmax = np.concatenate((pmax,np.array([np.pi, 0])), axis = 0)
-        # pmin = np.array([-0.5,-0.8,-0.5])
-        # pmax = np.array([0.5,-0.2,0.5])
     elif args.dataset_type == 'specular':
         nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_specular_data(args.datadir)
         pmin = volume_position - volume_size / 2
@@ -298,24 +272,6 @@ def train():
         if not args.no_rho:
             pmin = np.concatenate((pmin,np.array([0, -np.pi])), axis = 0)
             pmax = np.concatenate((pmax,np.array([np.pi, 0])), axis = 0)
-
-
-
-
-    # elif args.dataset_type == 'zaragoza64_raw':
-    #     nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_zaragoza64_raw(args.datadir)
-    #     # volume_position = 
-    #     # volume_size
-    #     pmin = np.array([-0.15,-0.65,-0.15])
-    #     pmax = np.array([0.15,-0.35,0.15])
-    #     print('Loaded nlos')
-    # elif args.dataset_type == 'zaragoza256_raw':
-    #     nlos_data, camera_position, camera_grid_size, camera_grid_positions, camera_grid_points, volume_position, volume_size, deltaT, c = load_zaragoza256_raw(args.datadir)
-    #     # volume_position = 
-    #     # volume_size
-    #     pmin = np.array([-0.15,-0.65,-0.15])
-    #     pmax = np.array([0.15,-0.35,0.15])
-    #     print('Loaded nlos')
 
     else:
         print('Unknown dataset type', args.dataset_type, 'exiting')
@@ -366,90 +322,26 @@ def train():
     if not os.path.exists(extrapath):
         os.makedirs(extrapath)
 
-    # Create nerf model
-    # render_kwargs_train, render_kwargs_test, start, grad_vars, optimizer = create_nerf(args)
-
-    # Construct our model by instantiating the class defined above
-    # if args.use_encoding:
-    #     model = Network_S(D_in = 6 * args.encoding_dim, H = args.hiddenlayer_dim, D_out = 1)
-    # else:
-    #     model = Network_S(D_in = 3, H = args.hiddenlayer_dim, D_out = 1)
-
+    # Create netf model
     if args.use_encoding: 
-        #     def __init__(self, D=8, H=256, input_ch=3, input_ch_views=3, output_ch=4, skips=[4], no_rho=False)
-        # model = Network(D=8, D_in = 6 * args.encoding_dim, H = args.hiddenlayer_dim, D_out = args.output_dim, no_rho=args.no_rho)
         model = Network_S_Relu(D = 8, H = args.hiddenlayer_dim, input_ch = 6 * args.encoding_dim, input_ch_views = 4 * args.encoding_dim, output_ch = 1, skips=[4], no_rho = args.no_rho)
-        # print('new model building')
     else:
-        # model = Network(D_in = 3, H = args.hiddenlayer_dim, D_out = args.output_dim, no_rho=args.no_rho)
         model = Network_S_Relu(D = 8, H = args.hiddenlayer_dim, input_ch = 3, input_ch_views = 2, output_ch = 1, skips=[4], no_rho=args.no_rho)
     
-    
-    # model = torch.load('./model/2.14test_#349/epoch2m0.pt', map_location = 'cuda:' + str(args.cuda))
-    # model = torch.load('./epoch2m240.pt', map_location = 'cuda:' + str(args.cuda))
-    # model = torch.load('./model/2.14test_#345/epoch2m224.pt', map_location = 'cuda:' + str(args.cuda))
-    # # model = torch.load('./model/12.2test_#171/epoch255m15.pt', map_location = 'cuda:' + str(args.cuda))
-    # model = torch.load('./model/11.28test_#153/epoch0m64.pt', map_location = 'cuda:' + str(args.cuda))
-    # # model = torch.load('./model/11.26test_#131/epoch3m23.pt', map_location = 'cuda:' + str(args.cuda)) # 
-    # # model = torch.load('./model/11.21test_#121/epoch3m54.pt', map_location = 'cuda:' + str(args.cuda))
-    # # model = torch.load('./model/10.27test_#50/epoch1m0.pt', map_location = 'cuda:' + str(args.cuda))
-    # # model = torch.load('./model/11.15test_#115/epoch2m135.pt', map_location = 'cuda:' + str(args.cuda))
-    # # model = torch.load('./model/10.25test_#45/epoch1m150.pt', map_location='cuda:' + str(args.cuda))
-    # # model = torch.load('./model/10.29test_#63/epoch1m255.pt', map_location='cuda:' + str(args.cuda))
-    # print('pretrained model')
-    # 预训练模型
+    # create a new model for future use, especially two-stage learning
     if args.use_encoding: 
-        #     def __init__(self, D=8, H=256, input_ch=3, input_ch_views=3, output_ch=4, skips=[4], no_rho=False)
-        # model = Network(D=8, D_in = 6 * args.encoding_dim, H = args.hiddenlayer_dim, D_out = args.output_dim, no_rho=args.no_rho)
         model_new = Network_S_Relu(D = 8, H = args.hiddenlayer_dim, input_ch = 6 * args.encoding_dim, input_ch_views = 4 * args.encoding_dim, output_ch = 1, skips=[4], no_rho = args.no_rho)
     else:
-        # model = Network(D_in = 3, H = args.hiddenlayer_dim, D_out = args.output_dim, no_rho=args.no_rho)
         model_new = Network_S_Relu(D = 8, H = args.hiddenlayer_dim, input_ch = 3, input_ch_views = 2, output_ch = 1, skips=[4], no_rho=args.no_rho)
-
-    # checkpoint = torch.load("./volumeregressionmodel/test1_withPE/epoch190_withPE.pt", map_location=torch.device('cpu'))
-    # model.load_state_dict(checkpoint["state_dict"])
-    # Construct our loss function and an Optimizer. The call to model.parameters()
-    # in the SGD constructor will contain the learnable parameters of the two
-    # nn.Linear modules which are members of the model.
-    # criterion = torch.nn.MSELoss(reduction='sum')
 
     model = model.to(device)
     model_new = model_new.to(device)
-    # criterion = torch.nn.L1Loss()
     criterion = torch.nn.MSELoss(reduction='mean')
-    # optimizer = torch.optim.SGD(model.parameters(), lr=0.00001)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-    # print(nlos_data.shape[0])
 
     global_step = 0
     camera_grid_size = camera_grid_size.astype(np.float)
     target_volume_size = args.target_volume_size
-
-    # [P,Q,R] = [target_volume_size,target_volume_size,target_volume_size]
-    # xv = np.linspace(pmin[0],pmax[0],P)
-    # yv = np.linspace(pmin[1],pmax[1],Q)
-    # zv = np.linspace(pmin[2],pmax[2],R)
-
-    
-    # P = target_volume_size
-    # # xv = np.linspace(pmin[0]-0.3,pmax[0]+0.3,P)
-    # # yv = np.linspace(pmin[1]-0.3,pmax[1]+0.3,Q)
-    # # zv = np.linspace(pmin[2]-0.3,pmax[2]+0.3,R)
-    # unit_distance = (camera_grid_size[0]) / (P - 1) # unit_distance = (pmax[0] - pmin[0]) / (P - 1)
-    # R = P
-    # xv = np.linspace(-camera_grid_size[0] / 2, camera_grid_size[0] / 2,P) 
-    # # xv = np.linspace(pmin[0],pmax[0],P)
-    # zv = np.linspace(-camera_grid_size[0] / 2, camera_grid_size[0] / 2,R) + volume_position[2]
-    # # zv = np.linspace(pmin[2],pmax[2],R)
-    # # yv = np.linspace(pmin[1],pmax[1],Q)
-    # # zv = np.linspace(pmin[2],pmax[2],R)
-    # Q = (pmax[1] - pmin[1]) / unit_distance + 1
-    # # R = (pmax[2] - pmin[2]) / unit_distance
-    # Q = int(round(min(Q,P)))
-    # # R = min(R,P)
-    # yv = np.linspace(pmax[1] - (Q - 1) * unit_distance, pmax[1], Q)
-
-    # volume_size = 1.0
 
     P = target_volume_size
     unit_distance = (volume_size) / (P - 1) 
@@ -460,9 +352,6 @@ def train():
     Q = int(round(min(Q,P)))
     yv = np.linspace(pmax[1] - (Q - 1) * unit_distance, pmax[1], Q)
 
-    # zv = zv + 0.15
-    
-
     coords = np.stack(np.meshgrid(xv, yv, zv),-1) # coords
     coords = coords.transpose([1,0,2,3])
     coords = coords.reshape([-1,3])
@@ -472,39 +361,30 @@ def train():
         view_direction[:,1] = - np.pi / 2
         coords = np.concatenate((coords, view_direction), axis = 1)
 
-    # pmin = volume_position - volume_size / 2
-    # pmax = volume_position + volume_size / 2
-    # if not args.no_rho:
-    #     pmin = np.concatenate((pmin,np.array([0, -np.pi])), axis = 0)
-    #     pmax = np.concatenate((pmax,np.array([np.pi, 0])), axis = 0)
-    # normalization
+    '''
+    for i in range(0, nlos_data.shape[1], 16): 
+        for j in range(0, nlos_data.shape[2], 16):
+            plt.plot(np.linspace(1,nlos_data.shape[0],nlos_data.shape[0]), nlos_data[:,i,j])
+    plt.savefig('./test/histogram_all_points.png')
+    # This is for test: plot the histogram of measurements
+    '''
 
-    # for i in range(0, nlos_data.shape[1], 16): 
-    #     for j in range(0, nlos_data.shape[2], 16):
-    #         plt.plot(np.linspace(1,nlos_data.shape[0],nlos_data.shape[0]), nlos_data[:,i,j])
-    # plt.savefig('./test/histogram_all_points.png')
-    # # 测试用代码：画出nlos_data 的histogram
-
-    # nlos_sum_histogram = np.sum(nlos_data,axis=2)
-    # nlos_sum_histogram = np.sum(nlos_sum_histogram,axis=1)
-    # plt.plot(np.linspace(1,nlos_data.shape[0],nlos_data.shape[0]), nlos_sum_histogram)
-    # plt.savefig('./histogram_sum_all.png')
-    # # 测试用代码：画出nlos_data的所有 histogram 之和
+    '''
+    nlos_sum_histogram = np.sum(nlos_data,axis=2)
+    nlos_sum_histogram = np.sum(nlos_sum_histogram,axis=1)
+    plt.plot(np.linspace(1,nlos_data.shape[0],nlos_data.shape[0]), nlos_sum_histogram)
+    plt.savefig('./histogram_sum_all.png')
+    # This is for test: plot the sum of all histogram of measurements
+    '''
 
     with torch.no_grad():
         nlos_data = torch.Tensor(nlos_data).to(device)
 
-    # if args.test_neglect_former_bins:
-    #     # threshold_former_bin = threshold_bin(nlos_data)
-    #     print('all bins < ',args.test_neglect_former_nums ,' are neglected')
-    # else:
-    #     pass
-
     N_iters = args.epoches
     [L,M,N] = nlos_data.shape
     I = args.test_neglect_former_nums
-    K = 2 # K 用 2 的倍数
-    batchsize = (L - I + 1) * K # K 用 2 的倍数
+    K = 2 # 
+    batchsize = (L - I + 1) * K # 
     base = 64 * 64 * 32
     max_batchsize = P * Q * R
     base_number = int(max_batchsize / base)
@@ -512,25 +392,6 @@ def train():
     test_batchsize = int(max_batchsize / base_number)
     train_batchsize = 64 * 64 * 256
     histogram_batchsize = args.histogram_batchsize
-    # print('Training Begin')
-    # with torch.no_grad():
-    #     ss_kernel = get_gaussian_kernel(kernel_size = 9, kernel_radius = 3.0)
-    #     ss = torch.from_numpy(ss_kernel[4,4,:]).float().to(device)
-    #     # ss = torch.tensor([0.00655965, 0.01330373	,0.11098164,	0.22508352,	0.11098164,	0.01330373, 0.00655965])
-    #     ss = ss / torch.sum(ss)
-    #     ss = ss.reshape([1, 1, -1])
-    #     nlos_data = nlos_data.reshape(L,M * N)
-    #     nlos_data_conved = nlos_data.clone()
-    #     for i in range(M * N):
-    #         data_se = nlos_data[:, i].reshape(1,1,-1)
-    #         nlos_data_conved[:,i] = F.conv1d(data_se, ss, padding = int((9 - 1) / 2)).reshape(-1)
-    #     nlos_data = nlos_data_conved.reshape(L,M,N)
-    #     del nlos_data_conved
-    #     print('WARNING: data conved by gaussian kernel!!!')
-    #     # for k in range(pdf_map.shape[0]):
-
-    # Summary writers
-    # writer = SummaryWriter(os.path.join(basedir, 'summaries', expname))
     
     # data shuffeler
     with torch.no_grad():
@@ -562,9 +423,7 @@ def train():
     pmax = torch.from_numpy(pmax).float().to(device)
     start = 0
     args.refinement = False
-    # average_loss = torch.zeros(M)
-    s2 = torch.randn(1, 1, 100).float().to(device)
-    # s2 = torch.from_numpy(np.array([1,-1]).reshape(1,1,2)).float().to(device)
+    s2 = torch.randn(1, 1, 100).float().to(device) # s2 can be used as convolutional kernel
     
     current_nlos_data = nlos_data
     current_camera_grid_positions = camera_grid_positions
@@ -574,7 +433,6 @@ def train():
     print(' ')
     for i in trange(start, N_iters):
         if args.occlusion:
-            # if i == (args.epoches - 1):
             if i > args.first_stage_epoch:
                 args.refinement = True
                 for param_group in optimizer.param_groups:
@@ -584,21 +442,14 @@ def train():
 
         if args.two_stage:
             if (i > args.first_stage_epoch) & (i < args.last_compute_epoch):
-            # if True:
                 if args.new_model:
                     if i == (args.first_stage_epoch + 1):
                         model = model_new
                         optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
                 
-                # load_data = scipy.io.loadmat('./model/loss_2_11.19test_2.mat')
-                # total_loss = torch.from_numpy(load_data['loss']).float().to(device)
-                # total_camera_grid_positions = load_data['camera_grid_positions']
                 scipy.io.savemat('./model/loss_' + str(i) + '.mat', {'loss':total_loss.cpu().detach().numpy(), 'camera_grid_positions': total_camera_grid_positions})
                 print('save loss')
 
-                # for p in range(256 * 256):
-                #         error_l = np.sum(total_camera_grid_positions[:,index[p]] - camera_grid_positions[:,p])
-                #         print(error_l)
                 if args.confocal:
                     [nlos_data_rebalanced, camera_grid_positions_rebalanced] = data_rebalance(args, total_loss, total_camera_grid_positions, nlos_data, camera_grid_positions, camera_grid_size, index, device, total_laser_grid_positions = None)
                 elif not args.confocal:
@@ -677,21 +528,7 @@ def train():
             if not args.confocal:
                 current_laser_grid_positions = laser_grid_positions
         print(i,'/',N_iters,'  stage:',stage)
-        # i = 1
-        
-        # for param_group in optimizer.param_groups:
-        #         param_group['lr'] = 0.001
-        #         learning_rate = param_group['lr']
-        #         print('learning rate is updated to ',learning_rate)
-        # if (i % 4) == 0:
-        #     m = 0
-        #     save_volume(model,coords, pmin, pmax,args, P,Q,R,device,test_batchsize,xv,yv,zv,i,m)
-        #     save_model(model, global_step,i,m)
-        # time0 = time.time()
-
         for m in range(0, M, 1):
-        # for m in range(0, M, 64):
-            
             if args.save_mat:
                 if (m % 32) == 0:
                     save_volume(model, coords, pmin, pmax, args, P, Q, R, device, test_batchsize, xv, yv, zv, i, m)
@@ -702,7 +539,6 @@ def train():
 
             if stage == 'learn':
                 for n in range(0, N, histogram_batchsize):
-                # for n in range(0, N, 64):
                     optimizer.zero_grad()
                     for j in range(0, histogram_batchsize, 1):
                         if args.confocal:
@@ -713,7 +549,6 @@ def train():
                             loss_batch = loss 
                         else:
                             loss_batch += loss 
-                        # print(n,j)
                     loss_batch.backward()
                     optimizer.step()
                     optimizer.zero_grad()
@@ -727,7 +562,6 @@ def train():
                             print('total time: ', total_time, ' hours')
             else:
                 for n in range(0, N, 1):
-                # for n in range(0, N, 64):
                     with torch.no_grad():
                         j = 0
                         if args.confocal:
@@ -741,10 +575,8 @@ def train():
                             dt = time.time()-time0
                             print(i,'/',N_iters,'iter  ', m,'/', current_nlos_data.shape[1],'  ', n,'/',current_nlos_data.shape[2], '  histgram loss: ',loss.item(), 'time: ', dt)
                             time0 = time.time()
-                        # print(n)
-    # training end
-    # volume_size = 1.0
 
+    # save volume of 256 at the training end
     P = args.final_volume_size
     unit_distance = (volume_size) / (P - 1) 
     R = P
@@ -753,8 +585,6 @@ def train():
     Q = (pmax.cpu().numpy()[1] - pmin.cpu().numpy()[1]) / unit_distance + 1
     Q = int(round(min(Q,P)))
     yv = np.linspace(pmax.cpu().numpy()[1] - (Q - 1) * unit_distance, pmax.cpu().numpy()[1], Q)
-
-    # zv = zv + 0.15
     
     coords = np.stack(np.meshgrid(xv, yv, zv),-1) # coords
     coords = coords.transpose([1,0,2,3])
@@ -767,187 +597,6 @@ def train():
 
     save_volume(model, coords, pmin, pmax, args, P, Q, R, device, test_batchsize, xv, yv, zv, i, M)
     save_model(model, global_step, i, M)
-
-    # total_loss = total_loss.reshape(M,N)
-    # mdic = {'loss':total_loss.cpu().detach().numpy()}
-    # scipy.io.savemat('./model/loss.mat', mdic)
-    # print('save loss')
-
-        # test_input = torch.from_numpy(coords).float().to(device)
-        # with torch.no_grad():
-        #     test_output = model(test_input).view(-1)
-        # test_gt = torch.from_numpy(occupancy).float().to(device)
-        # # error = torch.sum(torch.abs(test_output - test_gt)) / (M * N * L / skipstep / skipstep)
-        # with torch.no_grad():
-        #     error = criterion(test_output, test_gt)
-        # test_volume = test_output.view(64,64,64)
-        # test_volume = test_volume.numpy()
-        # mdic = {'volume':test_volume, 'x':xv, 'y':yv, 'z':zv}
-        # scipy.io.savemat('./model/predicted_volume' + str(i) + str(m) + str(n)  + '.mat', mdic)
-        # print('save predicted volume in epoch ' + str(i))
-
-        # model_name = './model/epoch' + str(i) + '.pt'
-        # torch.save(model, model_name)
-
-        # # Sample random ray batch
-        # if use_batching:
-        #     # Random over all images
-        #     batch = rays_rgb[i_batch:i_batch+N_rand] # [B, 2+1, 3*?]
-        #     batch = torch.transpose(batch, 0, 1)
-        #     batch_rays, target_s = batch[:2], batch[2]
-
-        #     i_batch += N_rand
-        #     if i_batch >= rays_rgb.shape[0]:
-        #         print("Shuffle data after an epoch!")
-        #         rand_idx = torch.randperm(rays_rgb.shape[0])
-        #         rays_rgb = rays_rgb[rand_idx]
-        #         i_batch = 0
-
-        # else:
-        #     # Random from one image
-        #     img_i = np.random.choice(i_train)
-        #     target = images[img_i]
-        #     pose = poses[img_i, :3,:4]
-
-        #     if N_rand is not None:
-        #         rays_o, rays_d = get_rays(H, W, focal, torch.Tensor(pose))  # (H, W, 3), (H, W, 3)
-
-        #         if i < args.precrop_iters:
-        #             dH = int(H//2 * args.precrop_frac)
-        #             dW = int(W//2 * args.precrop_frac)
-        #             coords = torch.stack(
-        #                 torch.meshgrid(
-        #                     torch.linspace(H//2 - dH, H//2 + dH - 1, 2*dH), 
-        #                     torch.linspace(W//2 - dW, W//2 + dW - 1, 2*dW)
-        #                 ), -1)
-        #             if i == start:
-        #                 print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}")                
-        #         else:
-        #             coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)  # (H, W, 2)
-
-        #         coords = torch.reshape(coords, [-1,2])  # (H * W, 2)
-        #         select_inds = np.random.choice(coords.shape[0], size=[N_rand], replace=False)  # (N_rand,)
-        #         select_coords = coords[select_inds].long()  # (N_rand, 2)
-        #         rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
-        #         rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
-        #         batch_rays = torch.stack([rays_o, rays_d], 0)
-        #         target_s = target[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
-
-        #####  Core optimization loop  #####
-        # rgb, disp, acc, extras = render(H, W, focal, chunk=args.chunk, rays=batch_rays,
-        #                                         verbose=i < 10, retraw=True,
-        #                                         **render_kwargs_train)
-
-        # optimizer.zero_grad()
-        # img_loss = img2mse(rgb, target_s)
-        # trans = extras['raw'][...,-1]
-        # loss = img_loss
-        # psnr = mse2psnr(img_loss)
-
-        # if 'rgb0' in extras:
-        #     img_loss0 = img2mse(extras['rgb0'], target_s)
-        #     loss = loss + img_loss0
-        #     psnr0 = mse2psnr(img_loss0)
-
-        # loss.backward()
-        # optimizer.step()
-
-        # # NOTE: IMPORTANT!
-        # ###   update learning rate   ###
-        # decay_rate = 0.1
-        # decay_steps = args.lrate_decay * 1000
-        # new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))
-        # for param_group in optimizer.param_groups:
-        #     param_group['lr'] = new_lrate
-        # ################################
-
-        # dt = time.time()-time0
-        # print(f"Step: {global_step}, Loss: {loss}, Time: {dt}")
-        #####           end            #####
-
-        # Rest is logging
-        # if i%args.i_weights==0:
-        #     path = os.path.join(basedir, expname, '{:06d}.tar'.format(i))
-        #     torch.save({
-        #         'global_step': global_step,
-        #         'network_fn_state_dict': render_kwargs_train['network_fn'].state_dict(),
-        #         'network_fine_state_dict': render_kwargs_train['network_fine'].state_dict(),
-        #         'optimizer_state_dict': optimizer.state_dict(),
-        #     }, path)
-        #     print('Saved checkpoints at', path)
-
-        # if i%args.i_video==0 and i > 0:
-        #     # Turn on testing mode
-        #     with torch.no_grad():
-        #         rgbs, disps = render_path(render_poses, hwf, args.chunk, render_kwargs_test)
-        #     print('Done, saving', rgbs.shape, disps.shape)
-        #     moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, i))
-        #     imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
-        #     imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
-
-        #     # if args.use_viewdirs:
-        #     #     render_kwargs_test['c2w_staticcam'] = render_poses[0][:3,:4]
-        #     #     with torch.no_grad():
-        #     #         rgbs_still, _ = render_path(render_poses, hwf, args.chunk, render_kwargs_test)
-        #     #     render_kwargs_test['c2w_staticcam'] = None
-        #     #     imageio.mimwrite(moviebase + 'rgb_still.mp4', to8b(rgbs_still), fps=30, quality=8)
-
-        # if i%args.i_testset==0 and i > 0:
-        #     testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
-        #     os.makedirs(testsavedir, exist_ok=True)
-        #     print('test poses shape', poses[i_test].shape)
-        #     with torch.no_grad():
-        #         render_path(torch.Tensor(poses[i_test]).to(device), hwf, args.chunk, render_kwargs_test, gt_imgs=images[i_test], savedir=testsavedir)
-        #     print('Saved test set')
-
-
-    
-        # if i%args.i_print==0:
-        #     tqdm.write(f"[TRAIN] Iter: {i} Loss: {loss.item()}  PSNR: {psnr.item()}")
-        # """
-        #     print(expname, i, psnr.numpy(), loss.numpy(), global_step.numpy())
-        #     print('iter time {:.05f}'.format(dt))
-
-        #     with tf.contrib.summary.record_summaries_every_n_global_steps(args.i_print):
-        #         tf.contrib.summary.scalar('loss', loss)
-        #         tf.contrib.summary.scalar('psnr', psnr)
-        #         tf.contrib.summary.histogram('tran', trans)
-        #         if args.N_importance > 0:
-        #             tf.contrib.summary.scalar('psnr0', psnr0)
-
-
-        #     if i%args.i_img==0:
-
-        #         # Log a rendered validation view to Tensorboard
-        #         img_i=np.random.choice(i_val)
-        #         target = images[img_i]
-        #         pose = poses[img_i, :3,:4]
-        #         with torch.no_grad():
-        #             rgb, disp, acc, extras = render(H, W, focal, chunk=args.chunk, c2w=pose,
-        #                                                 **render_kwargs_test)
-
-        #         psnr = mse2psnr(img2mse(rgb, target))
-
-        #         with tf.contrib.summary.record_summaries_every_n_global_steps(args.i_img):
-
-        #             tf.contrib.summary.image('rgb', to8b(rgb)[tf.newaxis])
-        #             tf.contrib.summary.image('disp', disp[tf.newaxis,...,tf.newaxis])
-        #             tf.contrib.summary.image('acc', acc[tf.newaxis,...,tf.newaxis])
-
-        #             tf.contrib.summary.scalar('psnr_holdout', psnr)
-        #             tf.contrib.summary.image('rgb_holdout', target[tf.newaxis])
-
-
-        #         if args.N_importance > 0:
-
-        #             with tf.contrib.summary.record_summaries_every_n_global_steps(args.i_img):
-        #                 tf.contrib.summary.image('rgb0', to8b(extras['rgb0'])[tf.newaxis])
-        #                 tf.contrib.summary.image('disp0', extras['disp0'][tf.newaxis,...,tf.newaxis])
-        #                 tf.contrib.summary.image('z_std', extras['z_std'][tf.newaxis,...,tf.newaxis])
-        # """
-
-        # global_step += 1
-
 
 if __name__=='__main__':
     # python run_nerf.py --config configs/nlos.txt

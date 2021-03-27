@@ -14,22 +14,19 @@ Make sure that the dependcies in `requirements.txt` are installed, or they can b
 # How to run
 Make sure that data is place correctly like
 ```
-project
+NeTF_public
 │   README.md
-│   file001.txt    
+│   run_netf.py
+│   ...
 │
-└───folder1
-│   │   file011.txt
-│   │   file012.txt
-│   │
-│   └───subfolder1
-│       │   file111.txt
-│       │   file112.txt
-│       │   ...
-│   
-└───folder2
-    │   file021.txt
-    │   file022.txt
+└───data
+    │   fk_dragon_meas_180_min_256_preprocessed.mat
+    │   ...
+    │
+    └───zaragozadataset
+        │   zaragoza256_preprocessed.mat
+        │   ...
+ 
 ```
 Then run with preset settings:
 ```

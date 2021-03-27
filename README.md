@@ -33,3 +33,5 @@ Then run with preset settings:
 "python run_netf.py --config configs/zaragoza_bunny.txt"
 ```
 Different settings are stroaged at "./configs/".
+
+Under preset settings, the training process takes around 24 hours on a single NVIDIA Tesla M40 GPU.

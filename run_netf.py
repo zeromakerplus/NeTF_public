@@ -8,10 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm, trange
 import scipy.io
-
 import matplotlib.pyplot as plt
-
-
 from run_netf_helpers import *
 from MLP import *
 

@@ -5,6 +5,8 @@ The preprocessed data we use can be downloaded at [[Google Drive]](https://drive
 
 The raw data can be downloaded at [Zaragoza NLOS synthetic dataset](https://graphics.unizar.es/nlos_dataset.html), [f-k migration](http://www.computationalimaging.org/publications/nlos-fk/) and [Convolutional Approximations](https://imaging.cs.cmu.edu/conv_nlos/)
 
+We also provide MATLAB code of data preprocess for NeTF, which is 'zaragoza_preprocess.m' and 'fk_data_preprocess.m'.
+
 # Environment setup
 Make sure that the dependcies in `requirements.txt` are installed, or they can be installed by 
 ```

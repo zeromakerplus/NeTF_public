@@ -19,7 +19,7 @@ prior = False
 prior_para = 1
 
 save_fig = True
-cuda = 2
+cuda = 0
 occlusion = False
 Down_num = 4
 epoches = 5

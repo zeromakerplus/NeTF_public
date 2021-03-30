@@ -22,7 +22,7 @@ prior_para = 1
 save_fig = True
 save_mat = True
     # if running Low-resolution data, it is better False, or several GB results data will be generated
-cuda = 2
+cuda = 0
 occlusion = False
 Down_num = 4
 epoches = 5

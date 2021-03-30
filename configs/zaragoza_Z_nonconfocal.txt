@@ -6,7 +6,7 @@ datadir = ./data/zaragozadataset/zaragoza_nonconfocal_Z_256_preprocessed.mat
     # nonconfocal: zaragoza_nonconfocal_256_preprocessed.mat
 dataset_type = zaragoza_nonconfocal
     # zaragoza256,lct,fk,specular,zaragoza_nonconfocal
-gt_times = 0.001
+gt_times = 100
     # zaragoza: 100
     # zaragoza bunny ward: 0.01
     # fk, lct, specular: 0.01
@@ -19,7 +19,7 @@ prior = False
 prior_para = 1
 
 save_fig = True
-cuda = 3
+cuda = 0
 occlusion = False
 Down_num = 4
 epoches = 5

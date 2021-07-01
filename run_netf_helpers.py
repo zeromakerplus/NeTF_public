@@ -16,6 +16,25 @@ import numpy.matlib
 
 torch.autograd.set_detect_anomaly(True)
 
+def encoding_batch_numpy(pt, L, no_rho):
+    # 输入 pt 是 N x 3 的矩阵numpy
+    logseq = np.logspace(start=0, stop=L-1, num=L, base=2)
+    xsin = np.sin((logseq * np.pi).reshape([1,-1]) * pt[:,0].reshape([-1,1]))
+    xcos = np.cos((logseq * np.pi).reshape([1,-1]) * pt[:,0].reshape([-1,1]))
+    ysin = np.sin((logseq * np.pi).reshape([1,-1]) * pt[:,1].reshape([-1,1]))
+    ycos = np.cos((logseq * np.pi).reshape([1,-1]) * pt[:,1].reshape([-1,1]))
+    zsin = np.sin((logseq * np.pi).reshape([1,-1]) * pt[:,2].reshape([-1,1]))
+    zcos = np.cos((logseq * np.pi).reshape([1,-1]) * pt[:,2].reshape([-1,1]))
+    if no_rho:
+        coded_pt = np.concatenate((xsin,xcos,ysin,ycos,zsin,zcos),axis = 1)
+    else:
+        thetasin = np.sin((logseq * np.pi).reshape([1,-1]) * pt[:,3].reshape([-1,1]))
+        thetacos = np.cos((logseq * np.pi).reshape([1,-1]) * pt[:,3].reshape([-1,1]))
+        phisin = np.sin((logseq * np.pi).reshape([1,-1]) * pt[:,4].reshape([-1,1]))
+        phicos = np.cos((logseq * np.pi).reshape([1,-1]) * pt[:,4].reshape([-1,1]))
+        coded_pt = np.concatenate((xsin,xcos,ysin,ycos,zsin,zcos,thetasin,thetacos,phisin,phicos),axis = 1)
+    return coded_pt
+
 def spherical_sample_histgram(I, L, camera_grid_positions, num_sampling_points, test_accurate_sampling, volume_position, volume_size, c, deltaT, no_rho, start, end):
     [x0,y0,z0] = [camera_grid_positions[0],camera_grid_positions[1],camera_grid_positions[2]]
 

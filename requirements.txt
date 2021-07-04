@@ -7,3 +7,5 @@ configargparse
 tensorboard==1.15.0
 tqdm
 opencv-python
+scipy
+h5py

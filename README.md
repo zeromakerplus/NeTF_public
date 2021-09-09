@@ -40,6 +40,7 @@ Under preset settings, the training process takes around 24 hours on a single NV
 
 # Results
 The final volume and slices from different view are stroaged at "./model"
+The matlab script "show_result.m" is also provided to generate 2D images from different views and 3D density distribution.
 
 And the comparision between predicted and measured histogram is stroaged at "./figure"
 

@@ -419,6 +419,7 @@ def compute_loss(M,m,N,n,i,j,I,L,pmin,pmax,device,criterion,model,args,nlos_data
 
             # normalization
             input_points_ori = input_points[:,0:3]
+            input_points_copy = input_points.clone()
             input_points = (input_points - pmin) / (pmax - pmin)
 
             if args.use_encoding:
@@ -459,8 +460,8 @@ def compute_loss(M,m,N,n,i,j,I,L,pmin,pmax,device,criterion,model,args,nlos_data
                     distance = (torch.linspace(I1, I2, I0) * deltaT * c).float().to(device)
                     distance = distance.reshape(-1, 1)
                     distance = distance.repeat(1, args.num_sampling_points ** 2)
-                    Theta = input_points.reshape(-1, args.num_sampling_points ** 2, 5)[:,:,3]
-                network_res = network_res / (distance ** 2) / torch.sin(Theta)
+                    Theta = input_points_copy.reshape(-1, args.num_sampling_points ** 2, 5)[:,:,3]
+                network_res = network_res / (distance ** 2) * torch.sin(Theta)
                 network_res = network_res * (volume_position[1] ** 2) * 1
             elif not args.confocal:
                 with torch.no_grad():

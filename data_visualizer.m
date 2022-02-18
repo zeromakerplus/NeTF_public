@@ -13,7 +13,7 @@ if ~isempty(output_name)
     open(v)
 end
 
-for i=1 : 10
+for i=1 : size(data,1)
 
     I = reshape(data(i,:,:),256,256);
     I = uint8(10*I);

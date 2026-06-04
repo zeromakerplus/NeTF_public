@@ -46,4 +46,4 @@ The matlab script "show_result.m" is also provided to generate 2D images from di
 And the comparision between predicted and measured histogram is stroaged at "./figure"
 
 # Contact us
-Please email shensy@shanghaitech.edu.cn or wangzi@shanghaitech.edu.cn if you have any questions or suggestions.
+Please email shensy@shanghaitech.edu.cn or wangzi@ucas.ac.cn if you have any questions or suggestions.
